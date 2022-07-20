@@ -45,9 +45,10 @@ const respObj = {
 function App() {
   const [data, setData] = useState<SpotifyResponse>(respObj);
   const [searchValue, setSearchValue] = useState("");
-  const [author, setAuthor] = useState("Jo Nesbø");
+  const [author, setAuthor] = useState("anne%20holt");
   const [token, setToken] = useState("");
 
+  //console.log(token);
   const CLIENT_ID = process.env.REACT_APP_CLIENT_ID;
   const CLIENT_SECRET = process.env.REACT_APP_CLIENT_SECRET;
 
@@ -63,25 +64,32 @@ function App() {
         "Content-Type": "application/x-www-form-urlencoded",
       },
     })
-      .then((res) => res.json())
+      .then((res) => {
+        console.log("reeees", res);
+        return res.json();
+      })
       .then((res) => {
         setToken(res.access_token);
-      });
+      })
+      .catch((err) => console.error(err));
   }
-
-  async function fetchSpotify(author?: string) {
-    await fetch(`https://api.spotify.com/v1/search?q=${author}&type=episode`, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    })
+  //https://api.spotify.com/v1/search?q=anne%20holt&type=episode
+  async function fetchSpotify(author: string) {
+    await fetch(
+      `https://api.spotify.com/v1/search?q=${author}&type=episode&market=NO`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
       .then((response) => response.json())
       .then((res: SpotifyResponse) => {
-        console.log(res);
-        console.log("res", res.episodes.items);
+        console.log("tot resposnse", res);
+        console.log("items", res.episodes.items);
         setData(res);
       })
       .catch((err) => console.error(err));
@@ -89,19 +97,21 @@ function App() {
   // finne ut av load on scroll spotify
 
   useEffect(() => {
-    fetchSpotify(author);
-  }, [author]);
+    getSpotifyAPIToken();
+  }, []);
 
   useEffect(() => {
-    getSpotifyAPIToken();
     fetchSpotify(author);
-  }, []);
+  }, [token]);
+
+  useEffect(() => {
+    fetchSpotify(author);
+    console.log("renders");
+  }, [author]);
 
   const filterBySearchName = data?.episodes?.items?.filter((episode) =>
     episode.name.includes(author)
   );
-
-  console.log("yooo", filterBySearchName);
 
   const handleSubmit = (e: any) => {
     if (e.key === "Enter") {
@@ -113,6 +123,8 @@ function App() {
   const filterByLanguage = data!.episodes!.items!.filter((episode) =>
     episode.language.includes("no")
   );
+
+  console.log("data", data);
 
   return (
     <AppContent>
@@ -128,20 +140,17 @@ function App() {
           placeholder="search author"
           onKeyDown={handleSubmit}
         />
-        {data ? (
-          filterByLanguage.map((item: SpotifyEpisodeObj) => (
-            <>
-              <Podcast
-                name={item.name}
-                uri={item.uri}
-                language={item.language}
-                description={item.description}
-              />
-            </>
-          ))
-        ) : (
-          <p>Loading...</p>
-        )}
+        {data?.episodes?.items?.map((item: SpotifyEpisodeObj) => (
+          <>
+            {console.log("wiiiiiiiiii")}
+            <Podcast
+              name={item.name}
+              uri={item.uri}
+              language={item.language}
+              description={item.description}
+            />
+          </>
+        ))}
       </>
     </AppContent>
   );
